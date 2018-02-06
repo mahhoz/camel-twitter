@@ -5,8 +5,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.FileEndpoint;
 import org.apache.camel.component.twitter.search.TwitterSearchComponent;
 import org.apache.camel.component.twitter.search.TwitterSearchEndpoint;
-import org.apache.camel.model.ModelCamelContext;
 
+import static org.apache.camel.builder.PredicateBuilder.or;
 import static pl.horban.camel.twitterexample.TwitterConfiguration.accessToken;
 import static pl.horban.camel.twitterexample.TwitterConfiguration.accessTokenSecret;
 import static pl.horban.camel.twitterexample.TwitterConfiguration.consumerKey;
@@ -17,9 +17,9 @@ import static pl.horban.camel.twitterexample.TwitterSearchProcessor.LANG_HEADER;
 public class TwitterSearchRoute extends RouteBuilder {
 
     private String searchTerm = "Poland OR Polska";
-    private String outEn = "C:/out/en";
-    private String outPl = "C:/out/pl";
-    private String outRest = "C:/out/rest";
+    private String outputFileEnglish = "C:/out/en";
+    private String outpuFilePolish = "C:/out/pl";
+    private String outputFileOthers = "C:/out/others";
 
     @Override
     public void configure() throws Exception {
@@ -40,15 +40,15 @@ public class TwitterSearchRoute extends RouteBuilder {
             .filter(onlyWellKnownUserPredicate(200))
             .choice() //content base router
                 .when(langPredicate("PL"))
-                    .to(getFileEndpoint(getContext(), outPl))
-                .when(langPredicate("EN"))
-                    .to(getFileEndpoint(getContext(), outEn))
+                    .to(getFileEndpoint(outpuFilePolish))
+                .when(or(langPredicate("EN"), langPredicate("EN-GB")))
+                    .to(getFileEndpoint(outputFileEnglish))
                 .otherwise()
-                    .to(getFileEndpoint(getContext(), outRest))
+                    .to(getFileEndpoint(outputFileOthers))
             .end();
     }
 
-    private FileEndpoint getFileEndpoint(ModelCamelContext context, String outDirectory) {
+    private FileEndpoint getFileEndpoint(String outDirectory) {
         return getContext().getEndpoint("file://" + outDirectory, FileEndpoint.class);
     }
 
